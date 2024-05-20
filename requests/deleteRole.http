@@ -1,0 +1,1 @@
+DELETE http://localhost:5050/auth/deleteRole/3

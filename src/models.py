@@ -51,6 +51,6 @@ class User_role(db.Model):
 
 class LoginAttempts(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    ip_address = db.Column(db.String(50), nullable=False, unique=True)
-    failed_attempts = db.Column(db.Integer, default=0, nullable=False)
+    ip_address = db.Column(db.String(15), nullable=False, unique=True)
+    attempts = db.Column(db.Integer, default=0, nullable=False)
     lockout_until = db.Column(db.DateTime, nullable=False, default=db.func.now())

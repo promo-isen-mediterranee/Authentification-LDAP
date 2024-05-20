@@ -1,5 +1,4 @@
-import datetime
-from datetime import timedelta
+from datetime import timedelta, datetime
 from functools import wraps
 from flask import request
 from flask_ldap3_login import AuthenticationResponseStatus
@@ -14,9 +13,9 @@ def response(object=None, message=None, status_code=200):
     if status_code >= 400:
         dictionary["error"] = message
     else:
-        if object:
+        if object is not None:
             dictionary = object
-        elif message:
+        elif message is not None:
             dictionary["message"] = message
 
     return dictionary, status_code
@@ -52,7 +51,7 @@ def login_attempts():
             ip_address = request.remote_addr
             login_attempt = LoginAttempts.query.filter_by(ip_address=ip_address).first()
 
-            if login_attempt and login_attempt.lockout_until > datetime.datetime.now():
+            if login_attempt and login_attempt.lockout_until > datetime.now():
                 return response(message='Trop de tentatives de connexion. Réessayez dans une minute', status_code=429)
 
             if not login_attempt:
@@ -62,9 +61,9 @@ def login_attempts():
             res = fn(*args, **kwargs)
 
             if res[1] == 401:  # If the status code is 401 (Unauthorized), increment the failed login attempts
-                login_attempt.failed_attempts += 1
-                if login_attempt.failed_attempts % 5 == 0:
-                    login_attempt.lockout_until = datetime.datetime.now() + timedelta(minutes=1)
+                login_attempt.attempts += 1
+                if login_attempt.attempts % 5 == 0:
+                    login_attempt.lockout_until = datetime.now() + timedelta(minutes=1)
                 db.session.commit()
             elif res[1] == 200:  # If the status code is 200 (OK), reset the failed login attempts
                 if login_attempt:
@@ -79,7 +78,6 @@ def login_attempts():
 
 
 @app.post('/auth/addUser')
-#@login_required("ROLE_ADMIN")
 def add_user():
     try:
         request_form = request.form
@@ -101,7 +99,7 @@ def add_user():
         return response(message='Utilisateur créé', status_code=201)
     except Exception:
         logger.exception(f'Exception occurred')
-        return response(message='Erreur lors de la création de l\'utilisateur', status_code=500)
+        return response(message=f'Erreur lors de la création de l\'utilisateur', status_code=500)
 
 
 @app.put('/auth/editUser/<uuid:userId>')
@@ -165,10 +163,9 @@ def get_user(userId):
 
 
 @app.get('/auth/getAllUsers')
-#@login_required("ROLE_ADMIN")
 def get_all_users():
     try:
-        logger.info(f'Admin {current_user.username}  retrieved all users')
+        #logger.info(f'Admin {current_user.username}  retrieved all users')
 
         users_repr = User_role.query.all()
         users = [user_role.to_dict() for user_role in users_repr]
@@ -176,7 +173,7 @@ def get_all_users():
         return response(users)
     except Exception:
         logger.exception(f'Exception occurred')
-        return response(message='Erreur lors de la récupération des utilisateurs', status_code=500)
+        return response(message=f'Erreur lors de la récupération des utilisateurs', status_code=500)
 
 
 @app.post('/auth/addRoleUser/<uuid:userId>/<int:roleId>')
@@ -278,14 +275,15 @@ def edit_role(roleId):
 @app.delete('/auth/deleteRole/<int:roleId>')
 def delete_role(roleId):
     try:
-        user_roles = User_role.query.filter_by(role_id=roleId).all()
-        role = user_roles[0].r_role
+        role = Roles.query.get(roleId)
 
         if not role:
             return response(message='Rôle introuvable', status_code=404)
 
-        if role.role_id == 1:
+        if role.id == 1:
             return response(message='Impossible de supprimer le rôle', status_code=409)
+
+        user_roles = User_role.query.filter_by(role_id=roleId).all()
 
         for user_role in user_roles:
             db.session.delete(user_role)

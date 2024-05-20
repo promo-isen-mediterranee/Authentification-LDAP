@@ -1,0 +1,4 @@
+PUT http://localhost:5050/auth/editRole/2
+Content-Type: application/x-www-form-urlencoded
+
+label=ROLE_USER
