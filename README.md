@@ -103,7 +103,7 @@ ENV FLASK_RUN_PORT=5050
 # Create a directory for the app
 WORKDIR /my-flask-app
 
-# Copy the app code
+# Copy only the requirements file first to leverage Docker caching
 COPY my-flask-app/requirements.txt .
 
 # Install the dependencies
@@ -115,7 +115,7 @@ COPY my-flask-app/src /my-flask-app/src
 # Expose the port
 EXPOSE 5050
 
-# Spécifie la commande à exécuter
+# Specify the command to run on container start
 CMD ["flask", "run"]
 ```
 
