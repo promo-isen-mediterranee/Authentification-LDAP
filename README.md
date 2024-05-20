@@ -38,12 +38,14 @@ class User(db.Model):
 
 @app.route('/users')
 def users():
+    logger.info('Getting users')
     users = User.query.all()
     return {'users': users}
 
 
 @app.route('/')
 def hello_world():
+    logger.info('Hello, World!')
     return 'Hello, World!'
 
 
@@ -51,6 +53,7 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
+    logger.info('Starting the app')
     app.run()
 ```
 
@@ -77,11 +80,11 @@ FROM python:3.12
 ###############################
 
 # Database
-ENV DB_HOST=logistisen_db
+ENV DB_HOST=my-db
 ENV DB_PORT=5432
 ENV DB_USER=postgres
 ENV DB_PASSWORD=postgres
-ENV DB_NAME=logistisen_db
+ENV DB_NAME=db_name
 ENV SQLALCHEMY_TRACK_MODIFICATIONS=False
 
 # Flask
@@ -136,7 +139,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: my_db
+      POSTGRES_DB: db_name
     ports:
       - "5432:5432"
   my-flask-app:
