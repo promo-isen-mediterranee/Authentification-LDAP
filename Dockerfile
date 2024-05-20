@@ -31,7 +31,7 @@ ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5050
 
 # Secret key
-ENV SECRET="my_secret_key"
+ENV SECRET_KEY="my_secret_key"
 
 
 ###############################
