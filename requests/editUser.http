@@ -1,4 +1,0 @@
-PUT http://localhost:5050/auth/editUser/bce39654-4d78-45c6-9df2-6535ac46e6d5
-Content-Type: application/x-www-form-urlencoded
-
-username=dorian.bourdier
