@@ -1,5 +1,7 @@
 from datetime import timedelta, datetime
 from functools import wraps
+
+import pytz
 from flask import request, abort
 from flask_ldap3_login import AuthenticationResponseStatus
 from flask_login import login_user, logout_user, login_required, current_user
@@ -28,7 +30,8 @@ def login_attempts():
             ip_address = request.remote_addr
             login_attempt = LoginAttempts.query.filter_by(ip_address=ip_address).first()
 
-            if login_attempt is not None and login_attempt.lockout_until > datetime.now():
+            if login_attempt is not None and login_attempt.lockout_until > datetime.now(
+                    tz=pytz.timezone('Europe/Paris')):
                 return abort(429)
 
             if login_attempt is None:
@@ -333,7 +336,7 @@ def login():
 
     user = Users.query.filter_by(username=username).first()
 
-    #ldap_response = ldap_manager.authenticate(username, password)
+    # ldap_response = ldap_manager.authenticate(username, password)
     if user:
         if login_user(user, duration=timedelta(hours=1)):
             user.is_authenticated = True
