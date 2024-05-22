@@ -1,7 +1,6 @@
 from datetime import timedelta, datetime
 from functools import wraps
 from os import environ
-
 import pytz
 from flask import request, abort, session
 from flask_ldap3_login import AuthenticationResponseStatus
@@ -403,7 +402,6 @@ def login():
 
     if current_user and current_user.is_authenticated:
         return response(message='Déjà connecté', status_code=200)
-
 
     #ldap_response = ldap_manager.authenticate(username, password)
     if user:
