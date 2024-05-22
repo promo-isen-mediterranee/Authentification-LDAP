@@ -1,20 +1,23 @@
 from datetime import timedelta, datetime
 from functools import wraps
-from flask import request, abort
+from os import environ
+
+import pytz
+from flask import request, abort, session
 from flask_ldap3_login import AuthenticationResponseStatus
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, ldap_manager, login_manager, logger
-from models import Users, User_role, Roles, LoginAttempts
+from models import Users, User_role, Roles, LoginAttempts, Role_permissions, Permissions
 
 
-def response(object=None, message=None, status_code=200):
+def response(obj=None, message=None, status_code=200):
     dictionary = {}
 
     if status_code >= 400:
         dictionary["error"] = message
     else:
-        if object is not None:
-            dictionary = object
+        if obj is not None:
+            dictionary = obj
         elif message is not None:
             dictionary["message"] = message
 
@@ -28,24 +31,24 @@ def login_attempts():
             ip_address = request.remote_addr
             login_attempt = LoginAttempts.query.filter_by(ip_address=ip_address).first()
 
-            if login_attempt is not None and login_attempt.lockout_until > datetime.now():
+            if login_attempt and login_attempt.lockout_until > datetime.now(tz=pytz.timezone('Europe/Paris')):
                 return abort(429)
 
-            if login_attempt is None:
+            if not login_attempt:
                 login_attempt = LoginAttempts(ip_address=ip_address)
                 db.session.add(login_attempt)
 
             res = fn(*args, **kwargs)
+            status_code = res[1]
 
-            if res[1] == 401:  # If the status code is 401 (Unauthorized), increment the failed login attempts
+            if status_code == 401:  # If the status code is 401 (Unauthorized), increment the failed login attempts
                 login_attempt.attempts += 1
                 if login_attempt.attempts % 5 == 0:
-                    login_attempt.lockout_until = datetime.now() + timedelta(minutes=1)
-                db.session.commit()
-            elif res[1] == 200:  # If the status code is 200 (OK), reset the failed login attempts
-                if login_attempt:
-                    db.session.delete(login_attempt)
-                    db.session.commit()
+                    login_attempt.lockout_until = datetime.now(tz=pytz.timezone('Europe/Paris')) + timedelta(minutes=1)
+            elif status_code == 200:  # If the status code is 200 (OK), reset the failed login attempts
+                db.session.delete(login_attempt)
+
+            db.session.commit()
 
             return res
 
@@ -54,27 +57,41 @@ def login_attempts():
     return wrapper
 
 
-def role_required(*roles):
+def permissions_required(*permissions):
     def wrapper(fn):
         @wraps(fn)
         def decorated_view(*args, **kwargs):
             if not current_user.is_authenticated:
                 return login_manager.unauthorized()
 
-            if not roles:
+            if not permissions:
                 return fn(*args, **kwargs)
 
             user_roles = User_role.query.filter_by(user_id=current_user.id).all()
-            uroles = [user_role.role.label for user_role in user_roles]
-            for role in roles:
-                for urole in uroles:
-                    if role == urole:
-                        return fn(*args, **kwargs)
+            roles = [user_role.r_role for user_role in user_roles]
+            has_permission = any(
+                Role_permissions.query.filter_by(role_id=role.id, permission_id=permission).first()
+                for role in roles for permission in permissions
+            )
+
+            if has_permission:
+                return fn(*args, **kwargs)
             return abort(403)
 
         return decorated_view
 
     return wrapper
+
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(seconds=float(environ.get('SESSION_DURATION_SECONDS')))
+
+
+@login_manager.user_loader
+def user_loader(userId):
+    return Users.query.get(userId)
 
 
 @app.errorhandler(400)
@@ -126,7 +143,7 @@ def internal_server_error(e):
 
 
 @app.post('/auth/addUser')
-@role_required('ROLE_ADMIN')
+@permissions_required(13)
 def add_user():
     request_form = request.form
     username = request_form['username']
@@ -140,15 +157,14 @@ def add_user():
     user = Users(username=username)
     user_role = User_role(r_user=user, role_id=role_id)
 
-    db.session.add(user)
-    db.session.add(user_role)
+    db.session.add_all([user, user_role])
     db.session.commit()
 
     return response(message='Utilisateur créé', status_code=201)
 
 
 @app.put('/auth/editUser/<uuid:userId>')
-@role_required('ROLE_ADMIN')
+@permissions_required(13)
 def edit_user(userId):
     request_form = request.form
     username = request_form['username']
@@ -166,7 +182,7 @@ def edit_user(userId):
 
 
 @app.delete('/auth/deleteUser/<uuid:userId>')
-@role_required('ROLE_ADMIN')
+@permissions_required(13)
 def delete_user(userId):
     user_roles = User_role.query.filter_by(user_id=userId).all()
 
@@ -185,7 +201,7 @@ def delete_user(userId):
 
 
 @app.get('/auth/getUser/<uuid:userId>')
-@role_required('ROLE_ADMIN')
+@permissions_required(12, 13)
 def get_user(userId):
     user_roles = User_role.query.filter_by(user_id=userId).all()
 
@@ -199,7 +215,7 @@ def get_user(userId):
 
 
 @app.get('/auth/getAllUsers')
-@role_required('ROLE_ADMIN')
+@permissions_required(12, 13)
 def get_all_users():
     logger.info(f'Admin {current_user.username}  retrieved all users')
 
@@ -210,7 +226,7 @@ def get_all_users():
 
 
 @app.post('/auth/addRoleUser/<uuid:userId>/<int:roleId>')
-@role_required('ROLE_ADMIN')
+@permissions_required(16)
 def add_role_user(userId, roleId):
     user = Users.query.get(userId)
     role = Roles.query.get(roleId)
@@ -232,7 +248,7 @@ def add_role_user(userId, roleId):
 
 
 @app.delete('/auth/deleteRoleUser/<uuid:userId>/<int:roleId>')
-@role_required('ROLE_ADMIN')
+@permissions_required(16)
 def delete_role_user(userId, roleId):
     user_role = User_role.query.filter_by(user_id=userId, role_id=roleId).first()
 
@@ -256,7 +272,7 @@ def delete_role_user(userId, roleId):
 
 
 @app.post('/auth/addRole/<string:label>')
-@role_required('ROLE_ADMIN')
+@permissions_required(15)
 def add_role(label):
     role = Roles.query.filter_by(label=label).first()
 
@@ -272,7 +288,7 @@ def add_role(label):
 
 
 @app.put('/auth/editRole/<int:roleId>')
-@role_required('ROLE_ADMIN')
+@permissions_required(15)
 def edit_role(roleId):
     request_form = request.form
     label = request_form['label']
@@ -294,7 +310,7 @@ def edit_role(roleId):
 
 
 @app.delete('/auth/deleteRole/<int:roleId>')
-@role_required('ROLE_ADMIN')
+@permissions_required(15)
 def delete_role(roleId):
     role = Roles.query.get(roleId)
 
@@ -316,12 +332,64 @@ def delete_role(roleId):
 
 
 @app.get('/auth/getRoles')
-@role_required('ROLE_ADMIN')
+@permissions_required(14, 15)
 def get_roles():
     roles_repr = Roles.query.all()
     roles = [role.to_dict() for role in roles_repr]
 
     return response(roles)
+
+
+@app.get('/auth/getPermissions')
+@permissions_required(17)
+def get_permissions():
+    permissions_repr = Permissions.query.all()
+    permissions = [permission.to_dict() for permission in permissions_repr]
+
+    return response(permissions)
+
+
+@app.get('/auth/getRolePermissions/<int:roleId>')
+@permissions_required(14, 15, 17)
+def get_role_permissions(roleId):
+    role_permissions_repr = Role_permissions.query.filter_by(role_id=roleId).all()
+
+    if not role_permissions_repr:
+        abort(404)
+
+    role_permissions = [role_permission.to_dict() for role_permission in role_permissions_repr]
+
+    return response(role_permissions)
+
+
+@app.post('/auth/addRolePermission/<int:roleId>/<int:permissionId>')
+@permissions_required(14, 15, 17)
+def add_role_permission(roleId, permissionId):
+    role_permission = Role_permissions.query.filter_by(role_id=roleId, permission_id=permissionId).first()
+
+    if role_permission:
+        abort(409)
+
+    role_permission = Role_permissions(role_id=roleId, permission_id=permissionId)
+
+    db.session.add(role_permission)
+    db.session.commit()
+
+    return response(message='Permission ajoutée au rôle', status_code=201)
+
+
+@app.delete('/auth/deleteRolePermission/<int:roleId>/<int:permissionId>')
+@permissions_required(14, 15, 17)
+def delete_role_permission(roleId, permissionId):
+    role_permission = Role_permissions.query.filter_by(role_id=roleId, permission_id=permissionId).first()
+
+    if not role_permission:
+        abort(404)
+
+    db.session.delete(role_permission)
+    db.session.commit()
+
+    return response(message='Permission supprimée du rôle', status_code=204)
 
 
 @app.post('/auth/login')
@@ -333,9 +401,13 @@ def login():
 
     user = Users.query.filter_by(username=username).first()
 
+    if current_user and current_user.is_authenticated:
+        return response(message='Déjà connecté', status_code=200)
+
+
     #ldap_response = ldap_manager.authenticate(username, password)
     if user:
-        if login_user(user, duration=timedelta(hours=1)):
+        if login_user(user):
             user.is_authenticated = True
             db.session.commit()
             return response(message='Authentification réussie', status_code=200)
@@ -343,11 +415,6 @@ def login():
             abort(401)
     else:
         abort(401)
-
-
-@login_manager.user_loader
-def user_loader(userId):
-    return Users.query.get(userId)
 
 
 @app.post('/auth/logout')

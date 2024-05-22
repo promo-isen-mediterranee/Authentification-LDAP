@@ -29,9 +29,7 @@ ENV LDAP_USE_SSL=False
 ENV FLASK_APP=API_Auth/src/main.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5050
-
-# Secret key
-ENV SECRET_KEY="my_secret_key"
+ENV SESSION_DURATION_SECONDS=3600
 
 
 ###############################

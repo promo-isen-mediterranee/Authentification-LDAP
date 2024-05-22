@@ -1,4 +1,7 @@
 import uuid
+
+import pytz
+
 from app import db
 
 
@@ -50,17 +53,19 @@ class User_role(db.Model):
 
 
 class LoginAttempts(db.Model):
+    __tablename__ = "login_attempts"
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     ip_address = db.Column(db.String(15), nullable=False, unique=True)
     attempts = db.Column(db.Integer, default=0, nullable=False)
-    lockout_until = db.Column(db.DateTime, nullable=False, default=db.func.now())
+    lockout_until = db.Column(db.DateTime, nullable=False, default=db.func.now(tz=pytz.timezone('Europe/Paris')))
 
 
 class Permissions(db.Model):
     __tablename__ = "permission"
 
     id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, autoincrement=True)
-    label = db.Column(db.String(20), nullable=False)
+    label = db.Column(db.String(20), nullable=False, unique=True)
 
     def to_dict(self):
         return {
