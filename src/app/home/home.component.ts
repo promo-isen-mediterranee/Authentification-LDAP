@@ -24,4 +24,14 @@ export class HomeComponent {
       })
     ).subscribe();
   }
+
+  getAllUsers() {
+    this.http.get('http://localhost:5050/auth/getAllUsers', {observe: 'response', withCredentials: true}).pipe(
+      tap(response => {
+        if (response.status === 200) {
+          console.log(response.body);
+        }
+      })
+    ).subscribe();
+  }
 }
