@@ -142,7 +142,7 @@ def internal_server_error(e):
 
 
 @app.post('/auth/addUser')
-@permissions_required(13)
+@permissions_required(14)
 def add_user():
     request_form = request.form
     username = request_form['username']
@@ -163,7 +163,7 @@ def add_user():
 
 
 @app.put('/auth/editUser/<uuid:userId>')
-@permissions_required(13)
+@permissions_required(14)
 def edit_user(userId):
     request_form = request.form
     username = request_form['username']
@@ -181,7 +181,7 @@ def edit_user(userId):
 
 
 @app.delete('/auth/deleteUser/<uuid:userId>')
-@permissions_required(13)
+@permissions_required(14)
 def delete_user(userId):
     user_roles = User_role.query.filter_by(user_id=userId).all()
 
@@ -200,7 +200,7 @@ def delete_user(userId):
 
 
 @app.get('/auth/getUser/<uuid:userId>')
-@permissions_required(12, 13)
+@permissions_required(13)
 def get_user(userId):
     user_roles = User_role.query.filter_by(user_id=userId).all()
 
@@ -214,7 +214,7 @@ def get_user(userId):
 
 
 @app.get('/auth/getAllUsers')
-@permissions_required(12, 13)
+@permissions_required(13)
 def get_all_users():
     logger.info(f'Admin {current_user.username}  retrieved all users')
 
@@ -225,7 +225,7 @@ def get_all_users():
 
 
 @app.post('/auth/addRoleUser/<uuid:userId>/<int:roleId>')
-@permissions_required(16)
+@permissions_required(17)
 def add_role_user(userId, roleId):
     user = Users.query.get(userId)
     role = Roles.query.get(roleId)
@@ -247,7 +247,7 @@ def add_role_user(userId, roleId):
 
 
 @app.delete('/auth/deleteRoleUser/<uuid:userId>/<int:roleId>')
-@permissions_required(16)
+@permissions_required(17)
 def delete_role_user(userId, roleId):
     user_role = User_role.query.filter_by(user_id=userId, role_id=roleId).first()
 
@@ -271,7 +271,7 @@ def delete_role_user(userId, roleId):
 
 
 @app.post('/auth/addRole/<string:label>')
-@permissions_required(15)
+#@permissions_required(16)
 def add_role(label):
     role = Roles.query.filter_by(label=label).first()
 
@@ -287,7 +287,7 @@ def add_role(label):
 
 
 @app.put('/auth/editRole/<int:roleId>')
-@permissions_required(15)
+@permissions_required(16)
 def edit_role(roleId):
     request_form = request.form
     label = request_form['label']
@@ -309,7 +309,7 @@ def edit_role(roleId):
 
 
 @app.delete('/auth/deleteRole/<int:roleId>')
-@permissions_required(15)
+@permissions_required(16)
 def delete_role(roleId):
     role = Roles.query.get(roleId)
 
@@ -331,7 +331,7 @@ def delete_role(roleId):
 
 
 @app.get('/auth/getRoles')
-@permissions_required(14, 15)
+@permissions_required(15)
 def get_roles():
     roles_repr = Roles.query.all()
     roles = [role.to_dict() for role in roles_repr]
@@ -340,7 +340,7 @@ def get_roles():
 
 
 @app.get('/auth/getPermissions')
-@permissions_required(17)
+@permissions_required(18)
 def get_permissions():
     permissions_repr = Permissions.query.all()
     permissions = [permission.to_dict() for permission in permissions_repr]
@@ -349,7 +349,7 @@ def get_permissions():
 
 
 @app.get('/auth/getRolePermissions/<int:roleId>')
-@permissions_required(14, 15, 17)
+@permissions_required(19)
 def get_role_permissions(roleId):
     role_permissions_repr = Role_permissions.query.filter_by(role_id=roleId).all()
 
@@ -361,34 +361,31 @@ def get_role_permissions(roleId):
     return response(role_permissions)
 
 
-@app.post('/auth/addRolePermission/<int:roleId>/<int:permissionId>')
-@permissions_required(14, 15, 17)
-def add_role_permission(roleId, permissionId):
-    role_permission = Role_permissions.query.filter_by(role_id=roleId, permission_id=permissionId).first()
+@app.post('/auth/setRolePermissions/<int:roleId>/<int:permission>')
+#@permissions_required(20)
+def set_role_permissions(roleId, permission):
+    # convert permission into string of bits
 
-    if role_permission:
-        abort(409)
+    role = Roles.query.get(roleId)
 
-    role_permission = Role_permissions(role_id=roleId, permission_id=permissionId)
-
-    db.session.add(role_permission)
-    db.session.commit()
-
-    return response(message='Permission ajoutée au rôle', status_code=201)
-
-
-@app.delete('/auth/deleteRolePermission/<int:roleId>/<int:permissionId>')
-@permissions_required(14, 15, 17)
-def delete_role_permission(roleId, permissionId):
-    role_permission = Role_permissions.query.filter_by(role_id=roleId, permission_id=permissionId).first()
-
-    if not role_permission:
+    if not role:
         abort(404)
 
-    db.session.delete(role_permission)
+    role_permissions = Role_permissions.query.filter_by(role_id=roleId).all()
+
+    for role_permission in role_permissions:
+        db.session.delete(role_permission)
+
+    binary_permission = f'{permission:20b}'
+
+    for i in range(len(binary_permission)):
+        if binary_permission[i] == '1':
+            role_permission = Role_permissions(role_id=roleId, permission_id=i+1)
+            db.session.add(role_permission)
+
     db.session.commit()
 
-    return response(message='Permission supprimée du rôle', status_code=204)
+    return response(message=binary_permission)
 
 
 @app.post('/auth/login')

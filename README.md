@@ -147,6 +147,8 @@ services:
       context: .
       dockerfile: my-flask-app/Dockerfile
     container_name: my-flask-app
+    environment:
+      - SECRET_KEY=${LOGISTISEN_SECRET_KEY}
     ports:
       - "5050:5050"
     depends_on:

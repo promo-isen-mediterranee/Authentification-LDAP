@@ -9,7 +9,10 @@ class Users(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.UUID, primary_key=True, unique=True, nullable=False, default=uuid.uuid4)
-    username = db.Column(db.String(30), nullable=False)
+    username = db.Column(db.String(101), nullable=False, unique=True)
+    mail = db.Column(db.String(50), nullable=False, unique=True)
+    nom = db.Column(db.String(50), nullable=False)
+    prenom = db.Column(db.String(50), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     is_authenticated = db.Column(db.Boolean, nullable=False, default=False)
 
