@@ -1,0 +1,8 @@
+API_Auth/.idea
+API_Auth/.venv
+API_Auth/__pycache__
+
+API_Auth-Test/.idea
+API_Auth-Test/.vscode
+API_Auth-Test/node_modules
+API_Auth-Test/.angular

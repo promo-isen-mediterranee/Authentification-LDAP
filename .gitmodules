@@ -1,0 +1,8 @@
+[submodule "API_Auth"]
+	path = API_Auth
+	url = https://github.com/promo-isen-mediterranee/Authentification-LDAP.git
+	branch = main
+[submodule "API_Auth-Test"]
+	path = API_Auth-Test
+	url = https://github.com/promo-isen-mediterranee/Authentification-LDAP.git
+	branch = angular-auth-testing
