@@ -2,11 +2,15 @@ from datetime import timedelta, datetime
 from functools import wraps
 from os import environ
 import pytz
-from flask import request, abort, session
+from flask import request, abort, session, current_app
 from flask_ldap3_login import AuthenticationResponseStatus
 from flask_login import login_user, logout_user, login_required, current_user
-from app import app, db, ldap_manager, login_manager, logger
-from models import Users, User_role, Roles, LoginAttempts, Role_permissions, Permissions, Alert
+from .models import Users, User_role, Roles, LoginAttempts, Role_permissions, Permissions, Alert
+
+db = current_app.db
+login_manager = current_app.login_manager
+ldap_manager = current_app.ldap_manager
+logger = current_app.logger
 
 
 def response(obj=None, message=None, status_code=200):
@@ -82,10 +86,10 @@ def permissions_required(*permissions):
     return wrapper
 
 
-@app.before_request
+@current_app.before_request
 def make_session_permanent():
     session.permanent = True
-    app.permanent_session_lifetime = timedelta(seconds=float(environ.get('SESSION_DURATION_SECONDS')))
+    current_app.permanent_session_lifetime = timedelta(seconds=float(environ.get('SESSION_DURATION_SECONDS')))
 
 
 @login_manager.user_loader
@@ -93,55 +97,47 @@ def user_loader(userId):
     return Users.query.get(userId)
 
 
-@app.errorhandler(400)
+@current_app.errorhandler(400)
 def bad_request(e):
-    logger.exception(f'Error occurred')
     return response(message='Requête incorrecte', status_code=400)
 
 
-@app.errorhandler(401)
+@current_app.errorhandler(401)
 def unauthorized(e):
-    logger.exception(f'Error occurred')
     return response(message='Non autorisé', status_code=401)
 
 
-@app.errorhandler(403)
+@current_app.errorhandler(403)
 def forbidden(e):
-    logger.exception(f'Error occurred')
     return response(message='Accès interdit', status_code=403)
 
 
-@app.errorhandler(404)
+@current_app.errorhandler(404)
 def page_not_found(e):
-    logger.exception(f'Error occurred')
     return response(message='Resource introuvable', status_code=404)
 
 
-@app.errorhandler(405)
+@current_app.errorhandler(405)
 def method_not_allowed(e):
-    logger.exception(f'Error occurred')
     return response(message='Méthode non autorisée', status_code=405)
 
 
-@app.errorhandler(409)
+@current_app.errorhandler(409)
 def conflict(e):
-    logger.exception(f'Error occurred')
     return response(message='Conflit', status_code=409)
 
 
-@app.errorhandler(429)
+@current_app.errorhandler(429)
 def too_many_requests(e):
-    logger.exception(f'Error occurred')
     return response(message=e, status_code=429)
 
 
-@app.errorhandler(500)
+@current_app.errorhandler(500)
 def internal_server_error(e):
-    logger.exception(f'Error occurred')
     return response(message='Erreur interne du serveur', status_code=500)
 
 
-@app.post('/auth/addUser')
+@current_app.post('/auth/addUser')
 @permissions_required(14)
 def add_user():
     request_form = request.form
@@ -162,7 +158,7 @@ def add_user():
     return response(message='Utilisateur créé', status_code=201)
 
 
-@app.put('/auth/editUser/<uuid:userId>')
+@current_app.put('/auth/editUser/<uuid:userId>')
 @permissions_required(14)
 def edit_user(userId):
     request_form = request.form
@@ -180,7 +176,7 @@ def edit_user(userId):
     return response(message='Utilisateur modifié', status_code=201)
 
 
-@app.delete('/auth/deleteUser/<uuid:userId>')
+@current_app.delete('/auth/deleteUser/<uuid:userId>')
 @permissions_required(14)
 def delete_user(userId):
     user_roles = User_role.query.filter_by(user_id=userId).all()
@@ -199,7 +195,7 @@ def delete_user(userId):
     return response(message='Utilisateur supprimé', status_code=204)
 
 
-@app.get('/auth/getUser/<uuid:userId>')
+@current_app.get('/auth/getUser/<uuid:userId>')
 @permissions_required(13)
 def get_user(userId):
     user_roles = User_role.query.filter_by(user_id=userId).all()
@@ -213,7 +209,7 @@ def get_user(userId):
     return response({"user": user, "roles": roles})
 
 
-@app.get('/auth/getAllUsers')
+@current_app.get('/auth/getAllUsers')
 @permissions_required(13)
 def get_all_users():
     logger.info(f'Admin {current_user.username}  retrieved all users')
@@ -224,7 +220,7 @@ def get_all_users():
     return response(users)
 
 
-@app.post('/auth/addRoleUser/<uuid:userId>/<int:roleId>')
+@current_app.post('/auth/addRoleUser/<uuid:userId>/<int:roleId>')
 @permissions_required(17)
 def add_role_user(userId, roleId):
     user = Users.query.get(userId)
@@ -246,7 +242,7 @@ def add_role_user(userId, roleId):
     return response(message='Role ajouté à l\'utilisateur', status_code=201)
 
 
-@app.delete('/auth/deleteRoleUser/<uuid:userId>/<int:roleId>')
+@current_app.delete('/auth/deleteRoleUser/<uuid:userId>/<int:roleId>')
 @permissions_required(17)
 def delete_role_user(userId, roleId):
     user_role = User_role.query.filter_by(user_id=userId, role_id=roleId).first()
@@ -270,7 +266,7 @@ def delete_role_user(userId, roleId):
     return response(message='Role supprimé de l\'utilisateur', status_code=204)
 
 
-@app.post('/auth/addRole/<string:label>')
+@current_app.post('/auth/addRole/<string:label>')
 @permissions_required(16)
 def add_role(label):
     role = Roles.query.filter_by(label=label).first()
@@ -286,7 +282,7 @@ def add_role(label):
     return response(message='Role créé', status_code=201)
 
 
-@app.put('/auth/editRole/<int:roleId>')
+@current_app.put('/auth/editRole/<int:roleId>')
 @permissions_required(16)
 def edit_role(roleId):
     request_form = request.form
@@ -308,7 +304,7 @@ def edit_role(roleId):
     return response(message='Rôle modifié', status_code=201)
 
 
-@app.delete('/auth/deleteRole/<int:roleId>')
+@current_app.delete('/auth/deleteRole/<int:roleId>')
 @permissions_required(16)
 def delete_role(roleId):
     role = Roles.query.get(roleId)
@@ -330,7 +326,7 @@ def delete_role(roleId):
     return response(message='Rôle supprimé', status_code=204)
 
 
-@app.get('/auth/getRoles')
+@current_app.get('/auth/getRoles')
 @permissions_required(15)
 def get_roles():
     roles_repr = Roles.query.all()
@@ -339,7 +335,7 @@ def get_roles():
     return response(roles)
 
 
-@app.get('/auth/getPermissions')
+@current_app.get('/auth/getPermissions')
 @permissions_required(18)
 def get_permissions():
     permissions_repr = Permissions.query.all()
@@ -348,7 +344,7 @@ def get_permissions():
     return response(permissions)
 
 
-@app.get('/auth/getRolePermissions/<int:roleId>')
+@current_app.get('/auth/getRolePermissions/<int:roleId>')
 @permissions_required(21)
 def get_role_permissions(roleId):
     role_permissions_repr = Role_permissions.query.filter_by(role_id=roleId).all()
@@ -361,7 +357,7 @@ def get_role_permissions(roleId):
     return response(role_permissions)
 
 
-@app.post('/auth/setRolePermissions/<int:roleId>/<int:permission>')
+@current_app.post('/auth/setRolePermissions/<int:roleId>/<int:permission>')
 @permissions_required(22)
 def set_role_permissions(roleId, permission):
     # convert permission into string of bits
@@ -388,7 +384,7 @@ def set_role_permissions(roleId, permission):
     return response(message=binary_permission)
 
 
-@app.get('/auth/getAllAlerts')
+@current_app.get('/auth/getAllAlerts')
 @permissions_required(13)
 def get_all_alerts():
     alerts = Alert.query.all()
@@ -397,7 +393,7 @@ def get_all_alerts():
     return response(alerts, status_code=200)
 
 
-@app.post('/auth/addAlert/<int:roleId>')
+@current_app.post('/auth/addAlert/<int:roleId>')
 @permissions_required(13)
 def add_alert(roleId):
     role = Roles.query.get(roleId)
@@ -413,7 +409,7 @@ def add_alert(roleId):
     return response(message='Alerte ajoutée', status_code=201)
 
 
-@app.put('/auth/editAlert/<int:alertId>')
+@current_app.put('/auth/editAlert/<int:alertId>')
 @permissions_required(13)
 def edit_alert(alertId):
     request_form = request.form
@@ -433,7 +429,7 @@ def edit_alert(alertId):
     return response(message='Alerte modifiée', status_code=201)
 
 
-@app.delete('/auth/deleteAlert/<int:alertId>')
+@current_app.delete('/auth/deleteAlert/<int:alertId>')
 @permissions_required(15)
 def delete_alert(alertId):
     alert = Alert.query.get(alertId)
@@ -447,7 +443,7 @@ def delete_alert(alertId):
     return response(message='Alerte supprimée', status_code=204)
 
 
-@app.post('/auth/login')
+@current_app.post('/auth/login')
 @login_attempts()
 def login():
     request_form = request.form
@@ -471,7 +467,7 @@ def login():
         abort(401)
 
 
-@app.post('/auth/logout')
+@current_app.post('/auth/logout')
 @login_required
 def logout():
     user = current_user

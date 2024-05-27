@@ -1,8 +1,8 @@
 import uuid
-
 import pytz
+from flask import current_app
 
-from app import db
+db = current_app.db
 
 
 class Alert(db.Model):

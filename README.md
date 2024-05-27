@@ -36,14 +36,14 @@ class User(db.Model):
         return '<User %r>' % self.username
 
 
-@app.route('/users')
+@current_app.route('/users')
 def users():
     logger.info('Getting users')
     users = User.query.all()
     return {'users': users}
 
 
-@app.route('/')
+@current_app.route('/')
 def hello_world():
     logger.info('Hello, World!')
     return 'Hello, World!'
