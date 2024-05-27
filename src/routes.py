@@ -770,6 +770,9 @@ def login():
     if current_user and current_user.is_authenticated:
         return response(message='Déjà connecté', status_code=200)
 
+    # res = ldap_manager.authenticate(username, password)
+
+    # if user and res.status == AuthenticationResponseStatus.success:
     if user:
         if login_user(user):
             user.is_authenticated = True
