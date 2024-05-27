@@ -349,7 +349,7 @@ def get_permissions():
 
 
 @app.get('/auth/getRolePermissions/<int:roleId>')
-@permissions_required(19)
+@permissions_required(21)
 def get_role_permissions(roleId):
     role_permissions_repr = Role_permissions.query.filter_by(role_id=roleId).all()
 
@@ -362,7 +362,7 @@ def get_role_permissions(roleId):
 
 
 @app.post('/auth/setRolePermissions/<int:roleId>/<int:permission>')
-@permissions_required(20)
+@permissions_required(22)
 def set_role_permissions(roleId, permission):
     # convert permission into string of bits
 
@@ -376,7 +376,7 @@ def set_role_permissions(roleId, permission):
     for role_permission in role_permissions:
         db.session.delete(role_permission)
 
-    binary_permission = f'{permission:20b}'
+    binary_permission = f'{permission:22b}'
 
     for i in range(len(binary_permission)):
         if binary_permission[i] == '1':
@@ -386,6 +386,65 @@ def set_role_permissions(roleId, permission):
     db.session.commit()
 
     return response(message=binary_permission)
+
+
+@app.get('/auth/getAllAlerts')
+@permissions_required(13)
+def get_all_alerts():
+    alerts = Alert.query.all()
+    alerts = [alert.to_dict() for alert in alerts]
+
+    return response(alerts, status_code=200)
+
+
+@app.post('/auth/addAlert/<int:roleId>')
+@permissions_required(13)
+def add_alert(roleId):
+    role = Roles.query.get(roleId)
+
+    if not role:
+        abort(404)
+
+    alert = Alert(r_role_alert=role, set_on = datetime.now(tz=pytz.timezone('Europe/Paris')))
+
+    db.session.add(alert)
+    db.session.commit()
+
+    return response(message='Alerte ajoutée', status_code=201)
+
+
+@app.put('/auth/editAlert/<int:alertId>')
+@permissions_required(13)
+def edit_alert(alertId):
+    request_form = request.form
+    role_id = request_form['role_id']
+    mail = request_form['mail']
+
+    alert = Alert.query.get(alertId)
+
+    if not alert:
+        abort(404)
+
+    alert.mail = mail
+    alert.role_id = role_id
+
+    db.session.commit()
+
+    return response(message='Alerte modifiée', status_code=201)
+
+
+@app.delete('/auth/deleteAlert/<int:alertId>')
+@permissions_required(15)
+def delete_alert(alertId):
+    alert = Alert.query.get(alertId)
+
+    if not alert:
+        abort(404)
+
+    db.session.delete(alert)
+    db.session.commit()
+
+    return response(message='Alerte supprimée', status_code=204)
 
 
 @app.post('/auth/login')
@@ -420,60 +479,3 @@ def logout():
     db.session.commit()
     logout_user()
     return response(message='Déconnexion réussie', status_code=200)
-
-
-@app.get('/auth/getAllAlerts')
-@permissions_required(13)
-def get_all_alerts():
-    alerts = Alert.query.all()
-    alerts = [alert.to_dict() for alert in alerts]
-
-    return response(alerts, status_code=200)
-
-
-@app.post('/auth/addAlert/<int:roleId>')
-@permissions_required(13)
-def add_alert(roleId):
-    role = Roles.query.get(roleId)
-
-    if not role:
-        abort(404)
-
-    alert = Alert(r_role_alert=role)
-
-    db.session.add(alert)
-    db.session.commit()
-
-    return response(message='Alerte ajoutée', status_code=201)
-
-
-@app.put('/auth/editAlert/<int:alertId>')
-@permissions_required(13)
-def edit_alert(alertId):
-    request_form = request.form
-    mail = request_form['mail']
-
-    alert = Alert.query.get(alertId)
-
-    if not alert:
-        abort(404)
-
-    alert.mail = mail
-
-    db.session.commit()
-
-    return response(message='Alerte modifiée', status_code=201)
-
-
-@app.delete('/auth/deleteAlert/<int:alertId>')
-@permissions_required(15)
-def delete_alert(alertId):
-    alert = Alert.query.get(alertId)
-
-    if not alert:
-        abort(404)
-
-    db.session.delete(alert)
-    db.session.commit()
-
-    return response(message='Alerte supprimée', status_code=204)
