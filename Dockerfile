@@ -26,7 +26,7 @@ ENV LDAP_BIND_USER_PASSWORD=None
 ENV LDAP_USE_SSL=False
 
 # Flask
-ENV FLASK_APP=API_Auth/src/main.py
+ENV FLASK_APP=API_Authentication/src/main.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5050
 ENV SESSION_DURATION_SECONDS=900
@@ -36,16 +36,16 @@ ENV SESSION_DURATION_SECONDS=900
 ###############################
 
 # Création du répertoire de travail
-WORKDIR /API_Auth
+WORKDIR /API_Authentication
 
 # Copie des fichiers de configuration
-COPY API_Auth/requirements.txt .
+COPY API_Authentication/requirements.txt .
 
 # Installation des dépendances
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copie du code
-COPY API_Auth/src /API_Auth/src
+COPY API_Authentication/src /API_Authentication/src
 
 # Expose le port 5050
 EXPOSE 5050

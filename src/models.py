@@ -23,6 +23,7 @@ class Alert(db.Model):
             "set_on": self.set_on
         }
 
+
 class Users(db.Model):
     __tablename__ = "users"
 
@@ -40,7 +41,11 @@ class Users(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
-            "username": self.username
+            "username": self.username,
+            "mail": self.mail,
+            "nom": self.nom,
+            "prenom": self.prenom,
+            "is_active": self.is_active,
         }
 
 
