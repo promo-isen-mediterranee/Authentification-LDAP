@@ -5,6 +5,24 @@ import pytz
 from app import db
 
 
+class Alert(db.Model):
+    __tablename__ = "alert"
+
+    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, autoincrement=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
+    set_on = db.Column(db.DateTime, nullable=False, default=db.func.now(tz=pytz.timezone('Europe/Paris')))
+    mail = db.Column(db.String(50), nullable=True)
+
+    r_role_alert = db.relationship("Roles", backref="role_alert")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "mail": self.mail,
+            "role": self.r_role_alert.to_dict(),
+            "set_on": self.set_on
+        }
+
 class Users(db.Model):
     __tablename__ = "users"
 

@@ -30,8 +30,6 @@ ENV FLASK_APP=API_Auth/src/main.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5050
 ENV SESSION_DURATION_SECONDS=900
-ENV SECRET_KEY=c3Q2PO9y0XjN6Twk5u1MSyVIVpTlYRi5
-
 
 ###############################
 #  Configuration de l'image   #

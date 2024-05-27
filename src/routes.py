@@ -6,7 +6,7 @@ from flask import request, abort, session
 from flask_ldap3_login import AuthenticationResponseStatus
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, ldap_manager, login_manager, logger
-from models import Users, User_role, Roles, LoginAttempts, Role_permissions, Permissions
+from models import Users, User_role, Roles, LoginAttempts, Role_permissions, Permissions, Alert
 
 
 def response(obj=None, message=None, status_code=200):
@@ -271,7 +271,7 @@ def delete_role_user(userId, roleId):
 
 
 @app.post('/auth/addRole/<string:label>')
-#@permissions_required(16)
+@permissions_required(16)
 def add_role(label):
     role = Roles.query.filter_by(label=label).first()
 
@@ -362,7 +362,7 @@ def get_role_permissions(roleId):
 
 
 @app.post('/auth/setRolePermissions/<int:roleId>/<int:permission>')
-#@permissions_required(20)
+@permissions_required(20)
 def set_role_permissions(roleId, permission):
     # convert permission into string of bits
 
@@ -420,3 +420,60 @@ def logout():
     db.session.commit()
     logout_user()
     return response(message='Déconnexion réussie', status_code=200)
+
+
+@app.get('/auth/getAllAlerts')
+@permissions_required(13)
+def get_all_alerts():
+    alerts = Alert.query.all()
+    alerts = [alert.to_dict() for alert in alerts]
+
+    return response(alerts, status_code=200)
+
+
+@app.post('/auth/addAlert/<int:roleId>')
+@permissions_required(13)
+def add_alert(roleId):
+    role = Roles.query.get(roleId)
+
+    if not role:
+        abort(404)
+
+    alert = Alert(r_role_alert=role)
+
+    db.session.add(alert)
+    db.session.commit()
+
+    return response(message='Alerte ajoutée', status_code=201)
+
+
+@app.put('/auth/editAlert/<int:alertId>')
+@permissions_required(13)
+def edit_alert(alertId):
+    request_form = request.form
+    mail = request_form['mail']
+
+    alert = Alert.query.get(alertId)
+
+    if not alert:
+        abort(404)
+
+    alert.mail = mail
+
+    db.session.commit()
+
+    return response(message='Alerte modifiée', status_code=201)
+
+
+@app.delete('/auth/deleteAlert/<int:alertId>')
+@permissions_required(15)
+def delete_alert(alertId):
+    alert = Alert.query.get(alertId)
+
+    if not alert:
+        abort(404)
+
+    db.session.delete(alert)
+    db.session.commit()
+
+    return response(message='Alerte supprimée', status_code=204)
