@@ -1,0 +1,2 @@
+GET localhost:5050/auth/getAllAlerts
+X-BYPASS: v2Fq5EoogcM0F7L2dtvZ9KZNaYpdfdx7

@@ -45,9 +45,7 @@ COPY ./src ./src
 COPY ./README.md ./README.md
 
 # Installation des dépendances
-#RUN pip install --no-cache-dir -r requirements.txt
-
-RUN pip install -e .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose le port 5050
 EXPOSE 5050

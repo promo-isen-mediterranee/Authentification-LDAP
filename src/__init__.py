@@ -1,5 +1,5 @@
 """
-Module name: Stock
+Module name: Authentication
 Authors: IMS Promo Dev Team <imspromo@yncrea.fr>
 """
 __version__ = "1.0.0"
