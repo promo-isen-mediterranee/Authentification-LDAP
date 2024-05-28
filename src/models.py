@@ -1,6 +1,6 @@
 import uuid
-import pytz
 from flask import current_app
+from sqlalchemy import func, text
 
 db = current_app.db
 
@@ -10,7 +10,7 @@ class Alert(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, autoincrement=True)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
-    set_on = db.Column(db.DateTime, nullable=False, default=db.func.now(tz=pytz.timezone('Europe/Paris')))
+    set_on = db.Column(db.DateTime, nullable=False, default=db.func.now().op('AT TIME ZONE')(text("'Europe/Paris'")))
     mail = db.Column(db.String(50), nullable=True)
 
     r_role_alert = db.relationship("Roles", backref="role_alert")
@@ -84,7 +84,7 @@ class LoginAttempts(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     ip_address = db.Column(db.String(15), nullable=False, unique=True)
     attempts = db.Column(db.Integer, default=0, nullable=False)
-    lockout_until = db.Column(db.DateTime, nullable=False, default=db.func.now(tz=pytz.timezone('Europe/Paris')))
+    lockout_until = db.Column(db.DateTime, nullable=False, default=db.func.now().op('AT TIME ZONE')(text("'Europe/Paris'")))
 
 
 class Permissions(db.Model):

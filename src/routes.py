@@ -3,12 +3,13 @@ This module contains the routes for the authentication system of the application
 It includes routes for user and role management, login attempts, session management, and error handling.
 """
 
-from datetime import timedelta, datetime
+from datetime import timedelta
 from functools import wraps
 from os import environ
-import pytz
 from flask import request, abort, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+from sqlalchemy import text, func
+
 from .models import Users, User_role, Roles, LoginAttempts, Role_permissions, Permissions, Alert
 
 # Database, login manager, LDAP manager, and logger instances from the current app
@@ -51,14 +52,13 @@ def login_attempts():
 
     :returns: A wrapper function that handles login attempts.
     """
-
     def wrapper(fn):
         @wraps(fn)
         def decorated_function(*args, **kwargs):
             ip_address = request.remote_addr
             login_attempt = LoginAttempts.query.filter_by(ip_address=ip_address).first()
 
-            if login_attempt and login_attempt.lockout_until > datetime.now(tz=pytz.timezone('Europe/Paris')):
+            if login_attempt and login_attempt.lockout_until > func.now().op('AT TIME ZONE')(text("'Europe/Paris'")):
                 return abort(429)
 
             if not login_attempt:
@@ -68,12 +68,12 @@ def login_attempts():
             res = fn(*args, **kwargs)
             status_code = res[1]
 
-            if status_code == 401:  # If the status code is 401 (Unauthorized), increment the failed login attempts
+            if status_code == 200:  # If the status code is 200 (OK), reset the failed login attempts
+                db.session.delete(login_attempt)
+            else:
                 login_attempt.attempts += 1
                 if login_attempt.attempts % 5 == 0:
-                    login_attempt.lockout_until = datetime.now(tz=pytz.timezone('Europe/Paris')) + timedelta(minutes=1)
-            elif status_code == 200:  # If the status code is 200 (OK), reset the failed login attempts
-                db.session.delete(login_attempt)
+                    login_attempt.lockout_until = func.now().op('AT TIME ZONE')(text("'Europe/Paris'")) + timedelta(minutes=1)
 
             db.session.commit()
 
@@ -688,7 +688,7 @@ def add_alert(roleId):
     if not role:
         abort(404)
 
-    alert = Alert(r_role_alert=role, set_on=datetime.now(tz=pytz.timezone('Europe/Paris')))
+    alert = Alert(r_role_alert=role, set_on=func.now().op('AT TIME ZONE')(text("'Europe/Paris'")))
 
     db.session.add(alert)
     db.session.commit()
@@ -780,7 +780,14 @@ def login():
         if login_user(user):
             user.is_authenticated = True
             db.session.commit()
-            return response(message='Authentification réussie', status_code=200)
+
+            user_roles = User_role.query.filter_by(user_id=user.id).all()
+            role_ids = [user_role.role_id for user_role in user_roles]
+            role_permissions_repr = Role_permissions.query.filter(Role_permissions.role_id.in_(role_ids)).all()
+            role_permissions = [role_permission.to_dict() for role_permission in role_permissions_repr]
+
+            # return user with its roles and permissions
+            return response(obj={"user": user.to_dict(), "role_permissions": role_permissions}, status_code=200)
         else:
             abort(401)
     else:

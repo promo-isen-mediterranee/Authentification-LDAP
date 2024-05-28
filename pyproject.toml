@@ -13,8 +13,8 @@ dependencies = [
     "flask-login",
     "flask-cors",
     #"flask-simpleldap",
+    "sqlalchemy",
     "psycopg2",
-    "pytz",
     "werkzeug",
     "waitress"
 ]
