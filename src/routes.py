@@ -8,14 +8,13 @@ from functools import wraps
 from os import environ
 import pytz
 from flask import request, abort, session, current_app
-from flask_ldap3_login import AuthenticationResponseStatus
 from flask_login import login_user, logout_user, login_required, current_user
 from .models import Users, User_role, Roles, LoginAttempts, Role_permissions, Permissions, Alert
 
 # Database, login manager, LDAP manager, and logger instances from the current app
 db = current_app.db
 login_manager = current_app.login_manager
-ldap_manager = current_app.ldap_manager
+#ldap = current_app.ldap
 logger = current_app.logger
 
 
@@ -770,9 +769,9 @@ def login():
     if current_user and current_user.is_authenticated:
         return response(message='Déjà connecté', status_code=200)
 
-    # res = ldap_manager.authenticate(username, password)
+    # res = ldap.authenticate(username, password)
 
-    # if user and res.status == AuthenticationResponseStatus.success:
+    # if user and res is True:
     if user:
         if login_user(user):
             user.is_authenticated = True

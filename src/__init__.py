@@ -8,11 +8,11 @@ import logging
 import sys
 from os import environ, makedirs
 from flask import Flask
-from flask_ldap3_login import LDAP3LoginManager
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
+#from flask_simpleldap import LDAP
 
 
 def init_app_config(app: Flask) -> None:
@@ -22,19 +22,14 @@ def init_app_config(app: Flask) -> None:
 
     app.secret_key = environ.get('SECRET_KEY')
 
-    # à modifier avec la configuration LDAP de votre serveur.
-    # Pour plus d'informations, consultez la documentation de Flask-LDAP3-Login:
-    # https://flask-ldap3-login.readthedocs.io/en/latest/
+    # Flask-SimpleLDAP configuration
+    # Documentation: https://pypi.org/project/Flask-SimpleLDAP/
     app.config['LDAP_HOST'] = environ.get('LDAP_HOST')
     app.config['LDAP_PORT'] = int(environ.get('LDAP_PORT'))
     app.config['LDAP_BASE_DN'] = environ.get('LDAP_BASE_DN')
-    app.config['LDAP_USER_DN'] = environ.get('LDAP_USER_DN')
-    app.config['LDAP_GROUP_DN'] = environ.get('LDAP_GROUP_DN')
-    app.config['LDAP_USER_RDN_ATTR'] = environ.get('LDAP_USER_RDN_ATTR')
-    app.config['LDAP_USER_LOGIN_ATTR'] = environ.get('LDAP_USER_LOGIN_ATTR')
-    app.config['LDAP_BIND_USER_DN'] = environ.get('LDAP_BIND_USER_DN')
-    app.config['LDAP_BIND_USER_PASSWORD'] = environ.get('LDAP_BIND_USER_PASSWORD')
-    app.config['LDAP_USE_SSL'] = bool(environ.get('LDAP_USE_SSL'))
+    app.config['LDAP_USERNAME'] = environ.get('LDAP_USERNAME')
+    app.config['LDAP_PASSWORD'] = environ.get('LDAP_PASSWORD')
+    app.config['LDAP_USER_OBJECT_FILTER'] = environ.get('LDAP_USER_OBJECT_FILTER')
 
 
 def create_app() -> Flask:
@@ -46,7 +41,7 @@ def create_app() -> Flask:
     db = SQLAlchemy(app)
     CORS(app, supports_credentials=True)
     LoginManager(app)
-    ldap_manager = LDAP3LoginManager(app)
+    #ldap = LDAP(app)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
     try:
@@ -56,13 +51,14 @@ def create_app() -> Flask:
 
     with app.app_context():
         app.db = db
-        app.ldap_manager = ldap_manager
-        from . import routes  # Import routes after app is created
+        #app.ldap = ldap
+        from . import routes
 
     return app
 
 
 app = create_app()
+
 
 if __name__ == "__main__":
     app.run()

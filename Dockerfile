@@ -14,16 +14,12 @@ ENV DB_NAME=logistisen_db
 ENV SQLALCHEMY_TRACK_MODIFICATIONS=False
 
 # Serveur ldap
-ENV LDAP_HOST="ad.mydomain.com"
+ENV LDAP_HOST="ldap.example.com"
 ENV LDAP_PORT=389
-ENV LDAP_BASE_DN="dc=mydomain,dc=com"
-ENV LDAP_USER_DN="ou=users"
-ENV LDAP_GROUP_DN="ou=groups"
-ENV LDAP_USER_RDN_ATTR="cn"
-ENV LDAP_USER_LOGIN_ATTR="username"
-ENV LDAP_BIND_USER_DN=None
-ENV LDAP_BIND_USER_PASSWORD=None
-ENV LDAP_USE_SSL=False
+ENV LDAP_BASE_DN="OU=users,DC=example,DC=com"
+ENV LDAP_USERNAME="CN=user,OU=Users,DC=example,DC=com"
+ENV LDAP_PASSWORD="password"
+ENV LDAP_USER_OBJECT_FILTER="(&(objectclass=person)(uid=%s))"
 
 # Flask
 ENV FLASK_APP=/API_Authentication/src/__init__.py
@@ -41,14 +37,21 @@ WORKDIR /API_Authentication
 # Copie des fichiers de configuration
 COPY requirements.txt .
 
-# Installation des dépendances
-RUN pip install --no-cache-dir -r requirements.txt
+COPY ./pyproject.toml ./pyproject.toml
 
 # Copie du code
 COPY ./src ./src
+
+COPY ./README.md ./README.md
+
+# Installation des dépendances
+#RUN pip install --no-cache-dir -r requirements.txt
+
+RUN pip install -e .
 
 # Expose le port 5050
 EXPOSE 5050
 
 # Spécifie la commande à exécuter
-CMD ["flask", "run"]
+# CMD ["flask", "run"]
+CMD ["waitress-serve", "--port", "5050", "src:app"]
