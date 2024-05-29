@@ -7,7 +7,7 @@ __version__ = "1.0.0"
 import atexit
 import logging
 import sys
-from os import environ, makedirs, getenv, path, getcwd
+from os import environ, makedirs, path, getcwd
 from flask import Flask
 from flask_login import LoginManager
 from flask_simpleldap import LDAP
@@ -48,10 +48,12 @@ def start_watchdog(app):
     event_handler = FileChangeHandler(app, config_env_path, ldap_env_path)
     observer = Observer()
     observer.schedule(event_handler, path=config_env_path, recursive=False)
-    observer.schedule(event_handler, path=ldap_env_path, recursive=False)
+    if path.exists(ldap_env_path):
+        observer.schedule(event_handler, path=ldap_env_path, recursive=False)
     observer.start()
     event_handler.load_app_config(config_env_path)
-    event_handler.load_app_config(ldap_env_path)
+    if path.exists(ldap_env_path):
+        event_handler.load_app_config(ldap_env_path)
 
     def stop_observer():
         observer.stop()
@@ -74,7 +76,8 @@ def create_app() -> Flask:
     db = SQLAlchemy(app)
     CORS(app, supports_credentials=True)
     LoginManager(app)
-    ldap = LDAP(app)
+    if environ.get('LDAP_URL') is not None:
+        ldap = LDAP(app)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
     try:
@@ -84,7 +87,8 @@ def create_app() -> Flask:
 
     with app.app_context():
         app.db = db
-        app.ldap = ldap
+        if environ.get('LDAP_URL') is not None:
+            app.ldap = ldap
         from . import routes
 
     return app

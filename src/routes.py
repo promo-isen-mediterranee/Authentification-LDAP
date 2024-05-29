@@ -774,10 +774,11 @@ def login():
         return sendUser(current_user)
 
     # check if user/password combination exists on LDAP server
-    #res = ldap.bind_user(username, password)
+    res = True
+    if environ.get('LDAP_URL') is not None:
+        res = ldap.bind_user(username, password)
 
-    #if user and res is True:
-    if user:
+    if user and res is True:
         if login_user(user):
             user.is_authenticated = True
             db.session.commit()
