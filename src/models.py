@@ -43,8 +43,8 @@ class Users(db.Model):
             "id": self.id,
             "username": self.username,
             "mail": self.mail,
-            "lastName": self.last_name,
-            "firstName": self.first_name,
+            "last_name": self.last_name,
+            "first_name": self.first_name,
             "is_active": self.is_active,
         }
 
