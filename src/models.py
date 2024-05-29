@@ -30,8 +30,8 @@ class Users(db.Model):
     id = db.Column(db.UUID, primary_key=True, unique=True, nullable=False, default=uuid.uuid4)
     username = db.Column(db.String(101), nullable=False, unique=True)
     mail = db.Column(db.String(50), nullable=False, unique=True)
-    lastName = db.Column(db.String(50), nullable=False)
-    firstName = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
+    first_name = db.Column(db.String(50), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     is_authenticated = db.Column(db.Boolean, nullable=False, default=False)
 
@@ -43,8 +43,8 @@ class Users(db.Model):
             "id": self.id,
             "username": self.username,
             "mail": self.mail,
-            "lastName": self.lastName,
-            "firstName": self.firstName,
+            "lastName": self.last_name,
+            "firstName": self.first_name,
             "is_active": self.is_active,
         }
 
