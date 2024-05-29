@@ -781,11 +781,15 @@ def login():
             db.session.commit()
 
             user_roles = User_role.query.filter_by(user_id=user.id).all()
-            role_ids = [user_role.role_id for user_role in user_roles]
-            role_permissions_repr = Role_permissions.query.filter(Role_permissions.role_id.in_(role_ids)).all()
-            role_permissions = [role_permission.to_dict() for role_permission in role_permissions_repr]
+            roles = []
+            for user_role in user_roles:
+                role = user_role.r_role.to_dict()
+                role_permissions_repr = Role_permissions.query.filter_by(role_id=role['id']).all()
+                role_permissions = [role_permission.r_permission.to_dict() for role_permission in role_permissions_repr]
+                role['permissions'] = role_permissions
+                roles.append(role)
 
-            return response(obj={"user": user.to_dict(), "role_permissions": role_permissions}, status_code=200)
+            return response(obj={"user": user.to_dict(), "roles": roles}, status_code=200)
         else:
             return response(message='Non autorisé', status_code=401)
     else:
