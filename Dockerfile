@@ -9,7 +9,6 @@ FROM python:3.12
 ENV FLASK_APP=/API_Authentication/src/__init__.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5050
-ENV SESSION_DURATION_SECONDS=900
 
 ###############################
 #  Configuration de l'image   #

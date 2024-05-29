@@ -10,7 +10,6 @@ import pytz
 from flask import request, abort, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import text, func
-
 from .models import Users, User_role, Roles, LoginAttempts, Role_permissions, Permissions, Alert
 
 # Database, login manager, LDAP manager, and logger instances from the current app
@@ -123,16 +122,6 @@ def permissions_required(*permissions):
         return decorated_view
 
     return wrapper
-
-
-@current_app.before_request
-def make_session_permanent():
-    """
-    This function is executed before each request to the Flask application.
-    It sets the session to be permanent and configures the session lifetime based on the 'SESSION_DURATION_SECONDS' environment variable.
-    """
-    session.permanent = True
-    current_app.permanent_session_lifetime = timedelta(seconds=float(environ.get('SESSION_DURATION_SECONDS')))
 
 
 @login_manager.user_loader

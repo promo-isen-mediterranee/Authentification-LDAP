@@ -17,36 +17,41 @@ from flask_cors import CORS
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-# Construct the path to the config.env file
-config_env_path = path.join(getcwd(), 'config.env')
-
 
 class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, app):
+    def __init__(self, app, config_env_path, ldap_env_path):
         self.app = app
+        self.config_env_path = config_env_path
+        self.ldap_env_path = ldap_env_path
 
     def on_modified(self, event):
-        if event.src_path == config_env_path:
-            self.load_app_config()
+        if event.src_path == self.config_env_path or event.src_path == self.ldap_env_path:
+            self.load_app_config(event.src_path)
+        else:
+            raise ValueError("Invalid config_type.")
 
-    def load_app_config(self):
-        with open(config_env_path, 'r') as f:
+    def load_app_config(self, config_path):
+        with open(config_path, 'r') as f:
             for line in f:
                 name, value = line.strip().split('=', 1)
-                if name == 'LDAP_PORT':
+                if value.isdigit():
                     self.app.config[name] = int(value)
-                elif name == "SQLALCHEMY_TRACK_MODIFICATIONS" or name == "SESSION_COOKIE_HTTPONLY":
+                elif value.lower() in ['true', 'false']:
                     self.app.config[name] = value.lower() == 'true'
                 else:
                     self.app.config[name] = value
 
 
 def start_watchdog(app):
-    event_handler = FileChangeHandler(app)
+    config_env_path = path.join(getcwd(), 'config.env')
+    ldap_env_path = "/usr/ldap.env"
+    event_handler = FileChangeHandler(app, config_env_path, ldap_env_path)
     observer = Observer()
     observer.schedule(event_handler, path=config_env_path, recursive=False)
+    observer.schedule(event_handler, path=ldap_env_path, recursive=False)
     observer.start()
-    event_handler.load_app_config()
+    event_handler.load_app_config(config_env_path)
+    event_handler.load_app_config(ldap_env_path)
 
     def stop_observer():
         observer.stop()
