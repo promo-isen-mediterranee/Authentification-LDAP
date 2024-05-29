@@ -363,8 +363,9 @@ def get_all_users():
 
     :returns: A response object containing a list of all users and their roles in dictionary format.
     """
-    users_repr = User_role.query.all()
-    users = [user_role.to_dict() for user_role in users_repr]
+    users_repr = Users.query.all()
+    users = [sendUser(user) for user in users_repr]
+
 
     return response(users)
 
