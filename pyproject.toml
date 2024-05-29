@@ -16,6 +16,7 @@ dependencies = [
     "SQLAlchemy",
     "psycopg2",
     "Werkzeug",
-    "waitress"
+    "waitress",
+    "dotenv"
 ]
 requires-python = ">=3.10"

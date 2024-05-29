@@ -68,7 +68,7 @@ def login_attempts():
 
             res = fn(*args, **kwargs)
 
-            if res.status_code == 200:  # If the status code is 200 (OK), reset the failed login attempts
+            if res[1] == 200:  # If the status code is 200 (OK), reset the failed login attempts
                 db.session.delete(login_attempt)
             else:
                 login_attempt.attempts += 1
@@ -785,9 +785,7 @@ def login():
             role_permissions_repr = Role_permissions.query.filter(Role_permissions.role_id.in_(role_ids)).all()
             role_permissions = [role_permission.to_dict() for role_permission in role_permissions_repr]
 
-            response_obj = response(obj={"user": user.to_dict(), "role_permissions": role_permissions}, status_code=200)
-
-            return make_response(response_obj)
+            return response(obj={"user": user.to_dict(), "role_permissions": role_permissions}, status_code=200)
         else:
             abort(401)
     else:

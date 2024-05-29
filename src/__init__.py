@@ -4,40 +4,66 @@ Authors: IMS Promo Dev Team <imspromo@yncrea.fr>
 """
 __version__ = "1.0.0"
 
+import atexit
 import logging
 import sys
-from os import environ, makedirs
+from os import environ, makedirs, getenv, path, getcwd
 from flask import Flask
 from flask_login import LoginManager
 from flask_simpleldap import LDAP
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+# Construct the path to the config.env file
+config_env_path = path.join(getcwd(), 'config.env')
+
+
+class FileChangeHandler(FileSystemEventHandler):
+    def __init__(self, app):
+        self.app = app
+
+    def on_modified(self, event):
+        if event.src_path == config_env_path:
+            self.load_app_config()
+
+    def load_app_config(self):
+        with open(config_env_path, 'r') as f:
+            for line in f:
+                name, value = line.strip().split('=', 1)
+                if name == 'LDAP_PORT':
+                    self.app.config[name] = int(value)
+                elif name == "SQLALCHEMY_TRACK_MODIFICATIONS" or name == "SESSION_COOKIE_HTTPONLY":
+                    self.app.config[name] = value.lower() == 'true'
+                else:
+                    self.app.config[name] = value
+
+
+def start_watchdog(app):
+    event_handler = FileChangeHandler(app)
+    observer = Observer()
+    observer.schedule(event_handler, path=config_env_path, recursive=False)
+    observer.start()
+    event_handler.load_app_config()
+
+    def stop_observer():
+        observer.stop()
+        observer.join()
+
+    atexit.register(stop_observer)
 
 
 def init_app_config(app: Flask) -> None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = \
-        f"postgresql://{environ.get('DB_USER')}:{environ.get('DB_PASSWORD')}@{environ.get('DB_HOST')}:{environ.get('DB_PORT')}/{environ.get('DB_NAME')}"
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = environ.get('SQLALCHEMY_TRACK_MODIFICATIONS')
-
     app.secret_key = environ.get('SECRET_KEY')
-
-    app.config['SESSION_COOKIE_HTTPONLY'] = False
-
-    # Flask-SimpleLDAP configuration
-    # Documentation: https://pypi.org/project/Flask-SimpleLDAP/
-    app.config['LDAP_HOST'] = environ.get('LDAP_HOST')
-    app.config['LDAP_PORT'] = int(environ.get('LDAP_PORT'))
-    app.config['LDAP_BASE_DN'] = environ.get('LDAP_BASE_DN')
-    app.config['LDAP_USERNAME'] = environ.get('LDAP_USERNAME')
-    app.config['LDAP_PASSWORD'] = environ.get('LDAP_PASSWORD')
-    app.config['LDAP_USER_OBJECT_FILTER'] = environ.get('LDAP_USER_OBJECT_FILTER')
 
 
 def create_app() -> Flask:
     app = Flask(__name__, instance_relative_config=True)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
+    start_watchdog(app)
     init_app_config(app)
 
     db = SQLAlchemy(app)

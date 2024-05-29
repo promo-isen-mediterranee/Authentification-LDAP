@@ -5,22 +5,6 @@ FROM python:3.12
 #  Variables d'environnement  #
 ###############################
 
-# Base de donnée
-ENV DB_HOST=logistisen_db
-ENV DB_PORT=5432
-ENV DB_USER=postgres
-ENV DB_PASSWORD=postgres
-ENV DB_NAME=logistisen_db
-ENV SQLALCHEMY_TRACK_MODIFICATIONS=False
-
-# Serveur ldap
-ENV LDAP_HOST="ldap.example.com"
-ENV LDAP_PORT=389
-ENV LDAP_BASE_DN="OU=users,DC=example,DC=com"
-ENV LDAP_USERNAME="CN=user,OU=Users,DC=example,DC=com"
-ENV LDAP_PASSWORD="password"
-ENV LDAP_USER_OBJECT_FILTER="(&(objectclass=person)(uid=%s))"
-
 # Flask
 ENV FLASK_APP=/API_Authentication/src/__init__.py
 ENV FLASK_RUN_HOST=0.0.0.0
@@ -53,5 +37,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5050
 
 # Spécifie la commande à exécuter
-CMD ["flask", "run"]
-#CMD ["waitress-serve", "--port", "5050", "src:app"]
+#CMD ["flask", "run"]
+CMD ["waitress-serve", "--port", "5050", "src:app"]
