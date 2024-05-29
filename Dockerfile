@@ -44,6 +44,8 @@ COPY ./src ./src
 
 COPY ./README.md ./README.md
 
+RUN apt-get update -y && apt-get install -y libsasl2-dev python-dev-is-python3 libldap2-dev libssl-dev
+
 # Installation des dépendances
 RUN pip install --no-cache-dir -r requirements.txt
 

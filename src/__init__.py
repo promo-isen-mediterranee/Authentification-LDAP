@@ -9,10 +9,10 @@ import sys
 from os import environ, makedirs
 from flask import Flask
 from flask_login import LoginManager
+from flask_simpleldap import LDAP
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
-#from flask_simpleldap import LDAP
 
 
 def init_app_config(app: Flask) -> None:
@@ -41,7 +41,7 @@ def create_app() -> Flask:
     db = SQLAlchemy(app)
     CORS(app, supports_credentials=True)
     LoginManager(app)
-    #ldap = LDAP(app)
+    ldap = LDAP(app)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
     try:
@@ -51,7 +51,7 @@ def create_app() -> Flask:
 
     with app.app_context():
         app.db = db
-        #app.ldap = ldap
+        app.ldap = ldap
         from . import routes
 
     return app

@@ -15,7 +15,7 @@ from .models import Users, User_role, Roles, LoginAttempts, Role_permissions, Pe
 # Database, login manager, LDAP manager, and logger instances from the current app
 db = current_app.db
 login_manager = current_app.login_manager
-#ldap = current_app.ldap
+ldap = current_app.ldap
 logger = current_app.logger
 
 
@@ -372,8 +372,6 @@ def get_all_users():
 
     :returns: A response object containing a list of all users and their roles in dictionary format.
     """
-    logger.info(f'Admin {current_user.username}  retrieved all users')
-
     users_repr = User_role.query.all()
     users = [user_role.to_dict() for user_role in users_repr]
 
@@ -773,10 +771,9 @@ def login():
     if current_user and current_user.is_authenticated:
         return response(message='Déjà connecté', status_code=200)
 
-    # res = ldap.authenticate(username, password)
+    res = ldap.authenticate(username, password)
 
-    # if user and res is True:
-    if user:
+    if user and res is True:
         if login_user(user):
             user.is_authenticated = True
             db.session.commit()

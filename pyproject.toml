@@ -12,7 +12,7 @@ dependencies = [
     "Flask-SQLAlchemy",
     "Flask-Login",
     "Flask-Cors",
-    #"Flask-SimpleLDAP",
+    "Flask-SimpleLDAP",
     "SQLAlchemy",
     "psycopg2",
     "Werkzeug",
