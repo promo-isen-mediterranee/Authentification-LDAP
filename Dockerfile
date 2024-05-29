@@ -53,5 +53,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5050
 
 # Spécifie la commande à exécuter
-# CMD ["flask", "run"]
-CMD ["waitress-serve", "--port", "5050", "src:app"]
+CMD ["flask", "run"]
+#CMD ["waitress-serve", "--port", "5050", "src:app"]

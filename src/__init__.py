@@ -22,6 +22,8 @@ def init_app_config(app: Flask) -> None:
 
     app.secret_key = environ.get('SECRET_KEY')
 
+    app.config['SESSION_COOKIE_HTTPONLY'] = False
+
     # Flask-SimpleLDAP configuration
     # Documentation: https://pypi.org/project/Flask-SimpleLDAP/
     app.config['LDAP_HOST'] = environ.get('LDAP_HOST')

@@ -6,7 +6,8 @@ It includes routes for user and role management, login attempts, session managem
 from datetime import timedelta
 from functools import wraps
 from os import environ
-from flask import request, abort, session, current_app
+from flask import request, abort, session, current_app, make_response
+from flask.sessions import SecureCookieSessionInterface
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import text, func
 
@@ -66,9 +67,8 @@ def login_attempts():
                 db.session.add(login_attempt)
 
             res = fn(*args, **kwargs)
-            status_code = res[1]
 
-            if status_code == 200:  # If the status code is 200 (OK), reset the failed login attempts
+            if res.status_code == 200:  # If the status code is 200 (OK), reset the failed login attempts
                 db.session.delete(login_attempt)
             else:
                 login_attempt.attempts += 1
@@ -771,9 +771,11 @@ def login():
     if current_user and current_user.is_authenticated:
         return response(message='Déjà connecté', status_code=200)
 
-    res = ldap.authenticate(username, password)
+    # check if user/password combination exists on LDAP server
+    #res = ldap.bind_user(username, password)
 
-    if user and res is True:
+    #if user and res is True:
+    if user:
         if login_user(user):
             user.is_authenticated = True
             db.session.commit()
@@ -783,8 +785,9 @@ def login():
             role_permissions_repr = Role_permissions.query.filter(Role_permissions.role_id.in_(role_ids)).all()
             role_permissions = [role_permission.to_dict() for role_permission in role_permissions_repr]
 
-            # return user with its roles and permissions
-            return response(obj={"user": user.to_dict(), "role_permissions": role_permissions}, status_code=200)
+            response_obj = response(obj={"user": user.to_dict(), "role_permissions": role_permissions}, status_code=200)
+
+            return make_response(response_obj)
         else:
             abort(401)
     else:
