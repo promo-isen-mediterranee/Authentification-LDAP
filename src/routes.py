@@ -15,7 +15,9 @@ from .models import Users, User_role, Roles, LoginAttempts, Role_permissions, Pe
 # Database, login manager, LDAP manager, and logger instances from the current app
 db = current_app.db
 login_manager = current_app.login_manager
-ldap = current_app.ldap
+ldap = None
+if environ.get('LDAP_URL') is not None:
+    ldap = current_app.ldap
 logger = current_app.logger
 
 
@@ -775,7 +777,7 @@ def login():
 
     # check if user/password combination exists on LDAP server
     res = True
-    if environ.get('LDAP_URL') is not None:
+    if ldap is not None:
         res = ldap.bind_user(username, password)
 
     if user and res is True:
