@@ -342,15 +342,12 @@ def get_user(userId):
 
     :returns: A response object containing the user and their roles in dictionary format.
     """
-    user_roles = User_role.query.filter_by(user_id=userId).all()
+    user = Users.query.get(userId)
 
-    if not user_roles:
+    if not user:
         abort(404)
 
-    user = user_roles[0].r_user.to_dict()
-    roles = [user_role.r_role.to_dict() for user_role in user_roles]
-
-    return response({"user": user, "roles": roles})
+    return response(sendUser(user))
 
 
 @current_app.get('/auth/getAllUsers')
