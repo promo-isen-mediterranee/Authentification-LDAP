@@ -748,6 +748,19 @@ def delete_alert(alertId):
     return response(message='Alerte supprimée', status_code=204)
 
 
+def sendUser(user):
+    user_roles = User_role.query.filter_by(user_id=user.id).all()
+    roles = []
+    for user_role in user_roles:
+        role = user_role.r_role.to_dict()
+        role_permissions_repr = Role_permissions.query.filter_by(role_id=role['id']).all()
+        role_permissions = [role_permission.r_permission.to_dict() for role_permission in role_permissions_repr]
+        role['permissions'] = role_permissions
+        roles.append(role)
+
+    return response(obj={"user": user.to_dict(), "roles": roles}, status_code=200)
+
+
 @current_app.post('/auth/login')
 @login_attempts()
 def login():
@@ -769,7 +782,7 @@ def login():
     user = Users.query.filter_by(username=username).first()
 
     if current_user and current_user.is_authenticated:
-        return response(message='Déjà connecté', status_code=200)
+        return sendUser(current_user)
 
     # check if user/password combination exists on LDAP server
     #res = ldap.bind_user(username, password)
@@ -780,16 +793,7 @@ def login():
             user.is_authenticated = True
             db.session.commit()
 
-            user_roles = User_role.query.filter_by(user_id=user.id).all()
-            roles = []
-            for user_role in user_roles:
-                role = user_role.r_role.to_dict()
-                role_permissions_repr = Role_permissions.query.filter_by(role_id=role['id']).all()
-                role_permissions = [role_permission.r_permission.to_dict() for role_permission in role_permissions_repr]
-                role['permissions'] = role_permissions
-                roles.append(role)
-
-            return response(obj={"user": user.to_dict(), "roles": roles}, status_code=200)
+            return sendUser(user)
         else:
             return response(message='Non autorisé', status_code=401)
     else:
