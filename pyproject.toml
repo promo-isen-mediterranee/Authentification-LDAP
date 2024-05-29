@@ -17,6 +17,6 @@ dependencies = [
     "psycopg2",
     "Werkzeug",
     "waitress",
-    "dotenv"
+    "pytz"
 ]
 requires-python = ">=3.10"

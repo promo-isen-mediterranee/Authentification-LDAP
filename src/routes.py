@@ -3,11 +3,11 @@ This module contains the routes for the authentication system of the application
 It includes routes for user and role management, login attempts, session management, and error handling.
 """
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from functools import wraps
 from os import environ
-from flask import request, abort, session, current_app, make_response
-from flask.sessions import SecureCookieSessionInterface
+import pytz
+from flask import request, abort, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import text, func
 
@@ -59,7 +59,7 @@ def login_attempts():
             ip_address = request.remote_addr
             login_attempt = LoginAttempts.query.filter_by(ip_address=ip_address).first()
 
-            if login_attempt and login_attempt.lockout_until > func.now().op('AT TIME ZONE')(text("'Europe/Paris'")):
+            if login_attempt and login_attempt.lockout_until > datetime.now(pytz.timezone('Europe/Paris')).replace(tzinfo=None):
                 return abort(429)
 
             if not login_attempt:
@@ -73,7 +73,7 @@ def login_attempts():
             else:
                 login_attempt.attempts += 1
                 if login_attempt.attempts % 5 == 0:
-                    login_attempt.lockout_until = func.now().op('AT TIME ZONE')(text("'Europe/Paris'")) + timedelta(minutes=1)
+                    login_attempt.lockout_until = datetime.now(pytz.timezone('Europe/Paris')).replace(tzinfo=None) + timedelta(minutes=1)
 
             db.session.commit()
 
@@ -236,7 +236,7 @@ def too_many_requests(e):
 
     :returns: A tuple containing the response dictionary and the status code.
     """
-    return response(message=e, status_code=429)
+    return response(message='Trop de requêtes', status_code=429)
 
 
 @current_app.errorhandler(500)
@@ -787,9 +787,9 @@ def login():
 
             return response(obj={"user": user.to_dict(), "role_permissions": role_permissions}, status_code=200)
         else:
-            abort(401)
+            return response(message='Non autorisé', status_code=401)
     else:
-        abort(401)
+        return response(message='Non autorisé', status_code=401)
 
 
 @current_app.post('/auth/logout')
