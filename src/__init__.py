@@ -7,7 +7,9 @@ __version__ = "1.0.0"
 import atexit
 import logging
 import sys
+import signal
 from os import environ, makedirs, path, getcwd
+
 from flask import Flask
 from flask_login import LoginManager
 from flask_simpleldap import LDAP
@@ -96,6 +98,7 @@ def create_app() -> Flask:
 
 app = create_app()
 
+signal.signal(signal.SIGTERM, lambda x, y: sys.exit(0))
 
 if __name__ == "__main__":
     app.run()
