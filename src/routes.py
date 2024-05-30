@@ -770,10 +770,10 @@ def login():
     username = request_form['username']
     password = request_form['password']
 
-    user = Users.query.filter_by(username=username).first()
-
     if current_user and current_user.is_authenticated:
-        return sendUser(current_user)
+        return response(obj=sendUser(current_user))
+
+    user = Users.query.filter_by(username=username).first()
 
     # check if user/password combination exists on LDAP server
     res = True
