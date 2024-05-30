@@ -54,13 +54,15 @@ def login_attempts():
 
     :returns: A wrapper function that handles login attempts.
     """
+
     def wrapper(fn):
         @wraps(fn)
         def decorated_function(*args, **kwargs):
             ip_address = request.remote_addr
             login_attempt = LoginAttempts.query.filter_by(ip_address=ip_address).first()
 
-            if login_attempt and login_attempt.lockout_until > datetime.now(pytz.timezone('Europe/Paris')).replace(tzinfo=None):
+            if login_attempt and login_attempt.lockout_until > datetime.now(pytz.timezone('Europe/Paris')).replace(
+                    tzinfo=None):
                 return abort(429)
 
             if not login_attempt:
@@ -74,7 +76,8 @@ def login_attempts():
             else:
                 login_attempt.attempts += 1
                 if login_attempt.attempts % 5 == 0:
-                    login_attempt.lockout_until = datetime.now(pytz.timezone('Europe/Paris')).replace(tzinfo=None) + timedelta(minutes=1)
+                    login_attempt.lockout_until = datetime.now(pytz.timezone('Europe/Paris')).replace(
+                        tzinfo=None) + timedelta(minutes=1)
 
             db.session.commit()
 
@@ -362,7 +365,6 @@ def get_all_users():
     """
     users_repr = Users.query.all()
     users = [sendUser(user) for user in users_repr]
-
 
     return response(users)
 
@@ -783,7 +785,7 @@ def login():
             user.is_authenticated = True
             db.session.commit()
 
-            return sendUser(user)
+            return response(obj=sendUser(user))
         else:
             return response(message='Non autorisé', status_code=401)
     else:
