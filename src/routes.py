@@ -747,7 +747,7 @@ def sendUser(user):
         role['permissions'] = role_permissions
         roles.append(role)
 
-    return response(obj={"user": user.to_dict(), "roles": roles}, status_code=200)
+    return {"user": user.to_dict(), "roles": roles}
 
 
 @current_app.post('/auth/login')
