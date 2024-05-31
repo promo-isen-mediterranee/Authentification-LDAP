@@ -6,6 +6,7 @@ It includes routes for user and role management, login attempts, session managem
 from datetime import timedelta, datetime
 from functools import wraps
 from os import environ
+
 import pytz
 from flask import request, abort, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
